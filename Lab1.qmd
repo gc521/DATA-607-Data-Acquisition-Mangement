@@ -1,0 +1,107 @@
+---
+title: "Lab1 NFL ELO Ratings"
+df-print: paged
+---
+
+## About ELO Ratings
+
+Elo is a dynamic rating system that works to identify player/team strength temporally. At a high level, every team enters every game with an Elo rating. This rating is just a number (usually between 1000 to 2000), with a higher number representing a stronger team.[^1] In short, Elo is based on head-to-head match ups based on the strength of each team. Elo rating can generally be applied in two separate contexts: the performance of each team for the latest season or the performance of each team for all games ever played throughout league history. We will focus on the latest NFL season because there is so much turnover from year to year in the NFL, that interpreting ability becomes difficult. [^2]
+
+[^1]: https://www.thefantasyfootballers.com/articles/elo-you-how-this-rating-system-affects-fantasy-football/#:\~:text=How%20does%20Elo%20work%3F,number%20representing%20a%20stronger%20team.
+
+[^2]: https://projects.fivethirtyeight.com/complete-history-of-the-nfl/#lar
+
+```{r, load-package, echo=FALSE, message=FALSE, include=FALSE}
+install.packages("dplyr")
+library(dplyr)
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("ggExtra")
+library(ggExtra)
+install.packages("ggthemes")
+library(ggthemes)
+install.packages("psych")
+library(psych)
+install.packages("hrbrthemes")
+library(hrbrthemes)
+install.packages("ggrepel")
+library(ggrepel)
+```
+
+```{r, load-data}
+#\ label: Load-data
+#\ include: False
+#\ message: False 
+nfl_games_22 <- read.csv('https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Lab-1/nfl_elo_latest.csv')
+glimpse(nfl_games_22)
+
+```
+
+```{r, WEE1-NFL-GAMES}
+#Filter for a glimpse at NFL teams prior to week 1
+nflgames22.week1 <- nfl_games_22 %>% filter(date == "2022-09-11")
+nflgames22.week1.Thurs <- nfl_games_22 %>% filter(date == "2022-09-08")
+nflgames22.week1.Mon <- nfl_games_22 %>% filter(date == "2022-09-12")
+nflgames22.week1 <- rbind(nflgames22.week1, nflgames22.week1.Mon, nflgames22.week1.Thurs) 
+
+```
+
+## Examing ELO Ratings: Before and Throughout 2022 Season. 
+
+Lets look at the pre ELO ratings for each team to get a better understanding of where each teams stands at the beginning of the season based on their ELO rating.
+
+```{r, nfl-visual}
+#| label: EloRatings before 2022 season
+#| fig-cap: "EloRatings before 2022 season for all NFL teams."
+#| fig-subcap:
+#|   - "Elo ratings before 2022 season for Home Teams"
+#|   - "Elo ratings before 2022 season for Away Teams"
+#| layout-nrow: 1
+#| column: screen-inset-shaded
+
+nflgames22.week1 <- nflgames22.week1 %>% rename(Home = team1)
+nflgames22.week1 <- nflgames22.week1 %>% rename(Away = team2)
+nflgames22.week1 <- nflgames22.week1 %>% rename(eloHome = elo1_pre)
+nflgames22.week1 <- nflgames22.week1 %>% rename(eloAway = elo2_pre)
+
+g <- ggplot(nflgames22.week1, aes(Home, eloHome))
+g + geom_point(aes(colour = factor(Home), size = eloHome)) +
+geom_label_repel(aes(label = Home))
+
+
+p <- ggplot(nflgames22.week1, aes(Away, eloAway))
+p + geom_point(aes(colour = factor(Away), size = eloAway)) + geom_label_repel(aes(label = Away))
+
+```
+
+We can see that KC and the LAR had the highest ratings at the beginning of the season, while JAX and the NYJ had the lowest ratings prior to the 2022 season. 
+
+Next we can look at the Elo Ratings for each team thoougout the season to see how their ratings changed throughout the season. 
+
+```{r, elo-ratings-throughout-2022-season, warning=FALSE }
+#| fig-cap: "EloRatings throughout 2022 season for all NFL teams."
+#| fig-subcap:
+#|   - "Elo ratings throughout 2022 season for Home Teams"
+#|   - "Elo ratings throughout 2022 season for Away Teams"
+#| layout-nrow: 1
+#| column: screen-inset-shaded
+nfl_games_22 <- nfl_games_22 %>% rename(Home = team1)
+nfl_games_22 <- nfl_games_22 %>% rename(Away = team2)
+nfl_games_22 <- nfl_games_22 %>% rename(eloHome = elo1_pre)
+nfl_games_22 <- nfl_games_22 %>% rename(eloAway = elo2_pre)
+nfl_games_22$date <- as.Date(nfl_games_22$date)
+
+
+g <- ggplot(nfl_games_22, aes(x=date, y=eloHome, group=Home, color = Home)) 
+g + geom_line(size=2, alpha=0.3, linetype=1) + geom_point() + theme_ipsum() +
+geom_label_repel(aes(label = Home))
+
+
+p <- ggplot(nfl_games_22, aes(x=date, y=eloAway, group=Away, color = Away)) 
+p + geom_line(size=2, alpha=0.3, linetype=1) + geom_point() + theme_ipsum() +   geom_label_repel(aes(label = Away))
+
+```
+## Discussion 
+The above visual shows that KC and BUF are were consistently once of the highest rated teams in regards to their ELO ratings, while HOU was the team with lowest ELO rating throughout the 2022 NFL season.  
+
+\`\`\`
