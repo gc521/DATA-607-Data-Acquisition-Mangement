@@ -1,0 +1,26 @@
+---
+title: "Lab2"
+Author: "Gabriel Castellanos "
+Date: "2/5/2023"
+Class: "Data 607"
+---
+
+## About Assignment 2
+
+Goal of lab is to simply load a table from a SQL database into an R dataframe. We will also deal with missing values. 
+```{r, load-package, echo=FALSE, message=FALSE}
+install.packages('odbc')
+library(odbc)
+install.packages('RODBC')
+library(RODBC)
+install.packages('sqldf')
+library(sqldf)
+install.packages("mice")
+library(mice)
+```
+```{r, load-data}
+con <- odbcDriverConnect(connection = "Driver= {SQL Server Native Client 11.0};server=localhost;database=DBex;trusted_connection=yes")
+queryresult <- sqlQuery(con, "select * from movies")
+
+imputed.data <- mice(queryresult)
+```
