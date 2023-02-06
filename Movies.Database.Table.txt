@@ -1,0 +1,14 @@
+CREATE TABLE Movies (
+    PersonID int primary key,
+    LastName varchar(255),
+    FirstName varchar(255),
+    Tombstone int,
+    HarryPotter int,
+	StarWars int,
+	ACockworkOrange int,
+	GroundhogDay int,
+	Interstellar int,
+
+);
+INSERT INTO Movies (PersonID, LastName, FirstName, Tombstone, HarryPotter, StarWars, ACockworkOrange, GroundhogDay, Interstellar) VALUES (1, 'Smith', 'John', 5, 4, 3, 5, 2, 4), (2, 'Patty', 'Anna', NULL, 3, 2, 4, 3, 4), 
+(3, 'Pratt', 'Chris', 5, NULL, 3, 3, 5, 4), (4, 'Williams', 'Anna', 5, 5, 1, 1, Null, 3), (5, 'Spielberg', 'Steven', 4, 2, 5, 5, 5, 4), (6, 'Nolan', 'Christopher', 3, 2, 5, 5, 4, 5), (7, 'Keesey', 'Ken', 5, 4, NULL, 2, 2, 2) 
