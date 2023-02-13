@@ -1,0 +1,89 @@
+---
+title: "Lab-3"
+author: "Gabriel Castellanos"
+date: 2/12/23
+---
+
+## Introduction
+
+The purpose of this lab is to practice with R packages that allow for string manipulation. The main dataset comes from the American Community Survey 2010-2012 Public Use Microdata Series. More info about the universities dataset and other datasets can be found here: [About Dataset](https://github.com/gc521/DATA-607-Data-Acquisition-Mangement/tree/Lab-3)
+
+## Part 1: Counting the Appearance of Select Terms
+
+The first part of the lab is to search for the select majors within this data set that contain "Data" or "Statistics". This can be accomplished in many ways, but this approach involves using sapply and then fetching the rows thatch indicate a match. An alternative approach uses the string r approach that concatenates two separate queries into one result.
+
+```{r, question-1}
+install.packages("stringr")
+library(stringr)
+college.majors <- read.csv("https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Lab-3/majors-list.csv")
+
+#Method 1
+major <- college.majors$Major
+s <- c("DATA", "STATISTICS")
+
+sapply(X = s, FUN = grepl, major)
+
+major[c(44, 52, 59)]
+
+#Method 2
+my.major.data <- str_subset(major, pattern = "DATA") 
+
+my.major.stats <- str_subset(major, pattern = "STATISTICS")
+
+paste(my.major.data, my.major.stats, sep = ',')
+
+
+```
+
+## Part 2: Gluing Strings
+
+The next part calls for converting a raw text format into something resembling a vector string in R. Shown is only one of many potential solutions.
+
+```{r, question-2}
+fruits_raw <- '[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+
+[13] "olive"        "salal berry"'
+fruits_raw
+fruits_raw <- unlist(str_extract_all(fruits_raw, pattern = "\"([a-z]+.[a-z]+)\""))
+new_str <- gsub('"','',fruits_raw) #Can also use str_extract_all
+new_str
+```
+
+## Part 3: Explanation of Common String Expressions.
+
+1.  (.)\\1\\1 - The (.) allows us to search for every character. The following two terms reference whichever character that was selected with the first term.They are known as a back reference. Therefore, the whole term as a whole allows us to search for a repeat of *any* three characters.
+
+2.  "(.)(.)\\2\\1" - Very similar to previous example, except the second capturing expression (.) allows us to select *any* *two* characters. The \\2 references the second capturing expression while the \\1 references the first. All together, the entire expression first select any two random characters then selects those same characters again, but in reverse order
+
+3.  (..)\\1 - This (again) is similar to the previous expression but the \\1 refers to the pair of selected characters. All together, this means that any two characters that are selected are then selected a second time E.g. "abab".
+
+4.  "(.).\\1.\\1" - The two periods allow us to select any character but they are not captured. Taken together, we capture a character, followed by a different character, then the captured character, then another different character and finally the captured character (again). An example might be "abaca".
+
+5.  "(.)(.)(.).\*\\3\\2\\1" - The 'new' term here is the period followed by the star. This zero or more of any character, until we select the third captured character, followed the second captured character, followed by the first E.g "abc1cba" or "afddfa"
+
+## Part 4: Miscellaneous String Exercises
+
+The following exercises basically ask to match patterns with regular expressions
+
+1.  Start and end with the same character. Note that there is a character vector called 'words' that come from the rcorpora package. More info can be found in this link: [About_corpora](https://github.com/dariusk/corpora)
+
+```{r}
+str_subset(words, "^(.)((.*\\1$)|\\1?$)")
+
+```
+2. Any pair of repeated letters within the same word.Letters are defined by the ASCII letters E.g A-Z
+```{r}
+str_subset(words, "([A-Za-z][A-Za-z]).*\\1")
+```
+
+3. The last part is meant to search for the aperence of any given letter in a word at exactly three times.
+
+```{r}
+str_subset(words, "([a-z]).*\\1.*\\1")
+```
+
+
