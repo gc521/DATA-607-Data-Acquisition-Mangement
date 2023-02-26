@@ -1,0 +1,25 @@
+CREATE TABLE Airlines (ID int NOT NULL Primary key,
+Airline_Name varchar(255)
+); 
+
+INSERT INTO Airlines(ID, Airline_name)
+VALUES (1, 'Alaska'), (2, 'American '), (3, 'Jet Blue'), (4, 'Delta '), (5, 'United'), (6, 'Hawaiian');  
+
+INSERT INTO Airlines(ID, Airline_name)
+
+VALUES (7, 'AM West');
+
+
+CREATE TABLE Arriving_Flights (City varchar(255) NOT NULL,
+Flight_number int NOT NULL primary key, 
+Flight_Status varchar(255), 
+Flight_Time_minuts int, 
+ID int FOREIGN KEY REFERENCES Airlines(ID));
+
+INSERT INTO Arriving_Flights(City, Flight_number, Flight_Status, Flight_Time_minuts, ID)
+VALUES ('Los Angelas', 1110, 'On-Time', 497, 1), ('Los Angelas', 1111, 'Delayed', 62, 1), ('Phoenix', 111, 'On-Time', 221, 1), ('Phoenix', 11111, 'Delayed', 12, 1),
+('San Diego', 11178, 'On-Time', 212, 1), ('San Diego', 11, 'Delayed', 20, 1), ('San Francisco', 13, 'On-Time', 503, 1), ('San Francisco', 21, 'Delayed', 102, 1), 
+('Seattle', 74, 'On-Time', 1841, 1), ('Seattle', 75, 'Delayed', 305, 1), ('Los Angelas', 8, 'On-Time', 694, 7), ('Los Angelas', 10, 'Delayed', 117, 7), ('Phoenix', 100000, 'On-Time', 4840, 7), 
+('Phoenix', 15555, 'Delayed', 415, 7), ('San Diego', 18774, 'On-Time', 383, 7), ('San Diego', 187514, 'Delayed', 65, 7), ('San Francisco', 1751458, 'On-Time', 320, 7),
+('San Francisco', 177774, 'Delayed', 129, 7), ('Seattle', 187965, 'On-Time', 201, 7), ('Seattle', 16547892, 'Delayed', 61, 7)
+
