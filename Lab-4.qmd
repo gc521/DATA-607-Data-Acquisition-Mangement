@@ -1,0 +1,130 @@
+---
+title: "DATA 607: Tidying Data"
+author: "Gabriel Castellanos"
+date: 2/26/23
+---
+
+## Introduction
+
+The goal of the project is to:
+
+1.  Load data into a data frame from SQL Server database that includes data about arriving flights in the United States. The source code to populate the tables can be found here: [Flights DB](https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Lab-4/Flights%20Database)
+
+2.  Once we load the data from the database into R, tidying/cleaning of the data needs to be performed.
+
+3.  Using data visualizations, use GG Plot to compare the 'On-Time' and 'Delayed' flights.
+
+First we install the required libraries/packages
+
+```{r, load-package, echo=FALSE, message=FALSE, warning=FALSE}
+install.packages('odbc', quiet = TRUE)
+library(odbc)
+install.packages('RODBC', quiet = TRUE)
+library(RODBC)
+install.packages('sqldf', quiet = TRUE)
+library(sqldf)
+install.packages("ggplot2", quiet = TRUE)
+library(ggplot2)
+install.packages("plotly", quiet = TRUE)
+library(plotly)
+install.packages("dplyr", quiet = TRUE)
+library(dplyr)
+install.packages("hrbrthemes", quiet = TRUE)
+library(hrbrthemes)
+install.packages("viridis")
+library(viridis)
+```
+
+Now we establish a connection to the database.
+
+```{r}
+con <- odbcDriverConnect(connection = "Driver= {SQL Server Native Client 11.0};server=localhost;database=DBex;trusted_connection=yes")
+```
+
+Next, we query the data that we want:
+
+```{r}
+queryresult <- sqlQuery(con, "select Airlines.Airline_Name, Arriving_Flights.City, Arriving_Flights.Flight_Status, Arriving_Flights.Flight_Time_minuts, Arriving_Flights.ID FROM Arriving_Flights INNER JOIN Airlines ON Arriving_Flights.ID = Airlines.ID;")
+
+
+
+```
+
+Now that we have the data loaded, we can commence the cleaning process.
+
+-   Flight time minutes are mislabeled and should be renamed the number of flights.
+
+-   We also need to convert character variables into factor in order to conduct analysis
+
+-   We also do not want the ID column.
+
+```{r}
+queryresult$ID <- NULL
+names(queryresult)[4] ="Number of Flights"
+```
+
+```{r}
+#Data Conversion
+queryresult$Airline_Name <- as.factor(queryresult$Airline_Name)
+queryresult$Flight_Status <- as.factor(queryresult$Flight_Status)
+
+queryresult$City <- as.factor(queryresult$City)
+
+```
+
+The data is now said to be 'tidy' as it meets each of the following 3 criteria:
+
+1.  Each variable forms a column.
+
+2.  Each observation forms a row.
+
+3.  Each type of observational unit forms a table. [^1]
+
+    -   Since the data is now considered tidy, we can now compare the 'On-Time' and delayed groups between the two airlines.
+
+[^1]: Wickham, Hadley. Tidy Data, Journal of Statistical Software, Volume VV, Issue II
+
+```{r, warning=FALSE}
+#| label: Plot-visual
+#| fig-cap: "Flight Status comparison for AM West and Alaska Airlines."
+#| fig-subcap:
+#|   - "Number of Flights for Alaska airlines: On-Time vs Delayed"
+#|   - "Number of Flights for AM West airlines: On-Time vs Delayed"
+#| layout-nrow: 1
+#| column: screen-inset-shaded
+Alaska <- subset(queryresult, Airline_Name == 'Alaska')
+
+AM.West <- subset(queryresult, Airline_Name == 'AM West')
+
+
+Alaska %>%
+  ggplot( aes(x=City, y=`Number of Flights`, group=Flight_Status, color=Flight_Status)) +
+    geom_line() +
+  coord_flip() +
+    scale_color_viridis(discrete = TRUE) +
+    ggtitle("Alaska Airlines: On-Time vs Delayed") +
+    theme_ipsum() +
+    ylab("Number of Flights")
+
+AM.West |> 
+  ggplot( aes(x=City, y=`Number of Flights`, group=Flight_Status, color=Flight_Status)) +
+    geom_line() +
+  coord_flip() +
+    scale_color_viridis(discrete = TRUE) +
+    ggtitle("AM West Airlines: On-Time vs Delayed") +
+    theme_ipsum() +
+    ylab("Number of Flights")
+
+
+
+```
+
+## Results
+
+From the graphs we can see that a few takeaways are immediately apparent:
+
+1.  They were a significantly greater amount of flights that were on time rather than delayed-- when looking at either airline (not surprising).
+
+2.  For AM West: the number of on-time flights and delayed flights are comparable, except when looking at Phoenix where there is a large number of on-time flights. This could be due to the airline getting a lot of traffic in this area. A similar observation can be seen with Alaska airlines and traveling to Seattle.
+
+3.  Due to a large number of flights going to Seattle (for Alaska) and Phoenix (for AM West), the number of delayed flights that travel to these cities is also fairly large.
