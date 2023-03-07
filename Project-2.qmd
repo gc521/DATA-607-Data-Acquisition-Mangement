@@ -1,0 +1,157 @@
+---
+title: "Project-2"
+author: "Gabriel Castellanos"
+---
+
+## Introduction
+
+The purpose of this project is to gain valuable hand on experience tidying different data sets for the purposes of further downstream data analysis. The project will involve tidying 3 csv files and then analyzing said files.
+
+## Data Set 1
+
+The first table comes from the United States Census Bureau. It contains mortality rates for different age groups for different countries that are grouped by sex. This table is in a wide format with column titles splitting the data into age categories and column subtitles splitting each factor further into genders.
+
+```{r, message=FALSE}
+#Load the data
+#MR = Mortality Rate
+MR <- read.csv("https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Project-2/export.csv", skip = 1)
+install.packages("dplyr")
+library(dplyr)
+install.packages("MASS") 
+install.packages("reshape2") 
+install.packages("reshape") 
+library(MASS)
+library(reshape)
+library(reshape2)
+install.packages("tidyr")
+library(tidyr)
+```
+
+We start the tidying process by dropping a few variables
+
+```{r, warning=FALSE}
+MR$Row <- NULL
+#Drop FIPS and GENC columns, as they are provide redundant and unwanted data
+MR$FIPS <- NULL
+MR$GENC <- NULL
+#Specify which values belong to infants, child under 5, Life Expectancy at Birth (LEAB)
+
+MR <- MR %>% rename_("Year" = "Year", "Country" = "Country.Area.Name", "Both.Sexes.InfantMR" = "Both.Sexes", 'Male.InfantMR' = 'Male', 'Female.InfantMR' = 'Female', 'Both.Sexes.ChildMR' = 'Both.Sexes.1', 'Male.ChildMR' = 'Male.1', 'Female.ChildMR' = 'Female.1', 'Both.Sexes.Under5' = 'Both.Sexes.2', 'Male.Under5' = 'Male.2', 'Female.Under5' = 'Female.2', 'Both.Sexes.LEAB' = 'Both.Sexes.3', 'Male.LEAB' = 'Male.3', 'Female.LEAB' = 'Female.3')
+
+melt_data <- melt(MR, id = c("Country","Year"), variable_name = c("Gender")) 
+
+
+
+
+```
+
+With the data now melted, we can begin basic exploratory data analysis. We can use the dplyr for analysis
+
+We start by averaging the different mortality rates, regardless of year/country
+
+```{r}
+
+MR <- melt_data |> 
+  select_all() |> 
+  group_by(Country) |> 
+  mutate(Norm.MR = value / mean(value, na.rm = TRUE))
+
+```
+
+The added column allows to get a sense of which countries had the highest/lowest mortality rates for each gender group.
+
+Another analysis we can do is to rank the countries based on mortality rates of the different age groups
+
+```{r}
+#First covert country to a factor from a character\
+MR$Country <- as.factor(MR$Country)
+
+df <- MR %>%
+  group_by(Country) %>%
+  summarize(mean_size = mean(value, na.rm = TRUE)) %>% arrange(mean_size, .by_group = FALSE) 
+
+```
+
+These query allows us to get a sense of the countries with the best / worst mortality metrics
+
+## Data Set 2
+
+The next data set comes from the CDC and it documents earning for health care professions.
+
+```{r}
+#HD == Healthcare data
+
+HD <- read.csv("https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Project-2/hcempl.csv", skip = 4)
+#Some of these rows are incomplete/contain missing values and should be dropped
+HD <- HD[-1,]
+HD <- HD[-29,]
+HD <- HD[-30,]
+
+
+HD <- HD[HD$Occupation.title != "Clinical laboratory technologists and technicians"
+, ]
+
+
+HD <- HD[HD$Occupation.title != "Medical dosimetrists, medical records specialists, and health technologists and technicians, all other" , ]
+
+HD <- HD[HD$Occupation.title != "Magnetic resonance imaging technologists\\3" , ]
+
+HD <- HD[HD$Occupation.title != "Orderlies\\5", ]
+
+HD <- HD[HD$Occupation.title != "Nurse anesthetists\\4", ]
+
+HD <- HD[HD$Occupation.title != "Nurse midwives\\4", ]
+
+HD <- HD[HD$Occupation.title != "Nurse practitioners\\4", ]
+
+HD <- HD |> rename_('Empoyment.Num.2000' = 'X2000', 'Empoyment.Num.2005' = 'X2005', 'Empoyment.Num.2009' = 'X2009', 'Empoyment.Num.2010' = 'X2010', 'Empoyment.Num.2015' = 'X2015', 'Empoyment.Num.2016' = 'X2016', 'Empoyment.Num.2020' = 'X2020', 'Hourly.Wage.2000' = 'X2000.1', 'Hourly.Wage.2005' = 'X2005.1', 'Hourly.Wage.2009' = 'X2009.1', 'Hourly.Wage.2010' = 'X2010.1','Hourly.Wage.2015' = 'X2015.1', 'Hourly.Wage.2016' = 'X2016.1', 'Hourly.Wage.2020' = 'X2020.1')
+
+
+HD <- HD |> rename_('EmpoymentNum.2000' = 'Empoyment.Num.2000', 'EmpoymentNum.2005' = 'Empoyment.Num.2005', 'EmpoymentNum.2009' = 'Empoyment.Num.2009', 'EmpoymentNum.2010' = 'Empoyment.Num.2010', 'EmpoymentNum.2015' = 'Empoyment.Num.2015', 'EmpoymentNum.2016' = 'Empoyment.Num.2016', 'EmpoymentNum.2020' = 'Empoyment.Num.2020', 'HourlyWage.2000' = 'Hourly.Wage.2000', 'HourlyWage.2005' = 'Hourly.Wage.2005', 'HourlyWage.2009' = 'Hourly.Wage.2009', 'HourlyWage.2010' = 'Hourly.Wage.2010', 'HourlyWage.2015' =  'Hourly.Wage.2015', 'HourlyWage.2016' = 'Hourly.Wage.2016', 'HourlyWage.2020' = 'Hourly.Wage.2020')
+
+
+melt_data <- melt(HD, id.vars = 'Occupation.title')
+
+df <- melt_data %>% separate_wider_delim(variable, delim = ".", names = c('Measure', 'Year'))
+ 
+
+df$value <- as.numeric(gsub(",", "", df$value))
+
+df.1 <- na.omit(df)
+
+```
+With the missing observations taken care of and the data now tidy, we can move towards analysis.
+
+```{r}
+df1 <- df.1 |> 
+  select_all() |> 
+  group_by(Measure, Occupation.title) |> 
+  mutate(Norm = value / mean(value, na.rm = TRUE))
+```
+
+## Data Set 3
+
+The last data set comes from Tidy data by Hadley Wickmen and it describes TB rates 
+
+```{r}
+TB <- read.csv("https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Project-2/TBHadly.Wickman.csv")
+
+TB <- TB |>  rename_('m.014' = 'm014', 'm.1524' = 'm1524', 'm.3544' = 'm3544', 'm.4554' = 'm4554', 'm.5564' = 'm5564', 'm.65' = 'm65', 'f.014' = 'f014', 'm.2534' = 'm2534')                
+TB$mu <- NULL
+
+df.3 <- melt(TB, id.vars = c('country', 'year'))
+
+df.4 <- df.3 %>% separate_wider_delim(variable, delim = ".", names = c('Sex', 'Age_Group'))
+
+df.4$Age_Group <- as.factor(df.4$Age_Group)
+
+levels(df.4$Age_Group) <- c("0-14", "15-24", "25-34", "35-44", "45-54", "55-64", "65")
+
+df.4 <- df.4 %>% 
+       rename_("Cases" = "value")
+
+
+
+```
+The data is now tidy and we can begin further analysis. 
+
