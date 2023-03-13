@@ -1,0 +1,63 @@
+---
+title: "Lab5"
+format: html
+author: "Gabriel Castellanos"
+---
+
+## Introduction
+
+This project calls for loading 3 different files (XML, JSON, and, HTML) that each describe 3 of my favorite books and their attributes. Each file was created with Notepad ++ and loaded into a Github Repository. In the end, we should have 3 seperate data frames.
+
+## JSON
+
+We need jsonlite package
+
+```{r}
+install.packages("jsonlite")
+library(jsonlite)
+
+url <- "https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Lab-5/Books.json"
+
+book <-fromJSON(url)
+
+as.data.frame(book)
+
+
+```
+
+## XML
+
+This can be done with the aid of few packages.
+
+```{r}
+install.packages("xml2")
+library(xml2)
+install.packages("XML")
+library("XML")
+install.packages('methods')
+library(methods)
+result <- read_xml('https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Lab-5/Books.xml')
+
+books.xml <- xmlParse(result)
+
+books.xml <- xmlToDataFrame(books.xml)
+
+
+```
+## HTML
+
+```{r}
+install.packages("rvest")
+library(rvest)
+
+
+books.html <- read_html('https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/Lab-5/Books.html', trim = TRUE)
+books.html <- html_table(books.html)
+books.html <- as.data.frame(books.html)
+
+
+```
+
+## Conclusion
+
+All 3 file types posed their own unique challenges, but if you know which packages to use, the task becomes very manageable. 
