@@ -1,0 +1,41 @@
+---
+title: "Lab-9"
+---
+
+## Introduction 
+The goal of this assignment is to load an API from the NYT and to constuct an interface to read it into a data frame. I chose the books API. This particular call retrieves the best seller names. The defualt parameters were used for this call.
+
+```{r, warning=FALSE, message=FALSE}
+
+install.packages('httr')
+library(httr)
+install.packages("xml2")
+library(xml2)
+install.packages("jsonlite")
+library(jsonlite)
+library(dplyr)
+install.packages("dplyr")
+install.packages("kableExtra")
+library(kableExtra)
+
+```
+
+```{r}
+key <- "HQAkLpV2K1ddJm8g1Qzfuj9Nk8vIgSKg"
+
+
+jsonFile <- 'https://api.nytimes.com/svc/books/v3/lists/names.json?api-key=HQAkLpV2K1ddJm8g1Qzfuj9Nk8vIgSKg'
+
+```
+
+```{r, warning=FALSE}
+jsonR <- tbl_df(as.data.frame(fromJSON(jsonFile)))
+jsonR %>% kable() %>% 
+  kable_styling( font_size = 10, latex_options = 'basic') %>% 
+  scroll_box(height = "500px", width = "100%")
+
+
+```
+## Discussion
+
+This assignment was not too tricky to figure out. NYT provides sufficient documentation on how to make calls with their APIs, although each API seems to have their own unique syntax. The also provide details on how to specify different parameters for each call, which is nice.  
