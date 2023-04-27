@@ -1,0 +1,239 @@
+---
+title: "Project-4"
+author: "Gabriel Castellanos"
+---
+
+## Introduction 
+
+The goal of this project is to correctly classify spam documents and 'ham' documents. To do this, we employ the Naive Bayes algorithm for predictive classification. Anytime presented with such a task, it is always a good idea to separate your working data set into training and testing partitions.
+
+## Split Data into Training and Testing
+
+```{r, split-data}
+
+spam <- read.csv("https://raw.githubusercontent.com/gc521/DATA-607-Data-Acquisition-Mangement/main/spam_ham_dataset.csv")
+
+
+split <- rsample::initial_split(spam, strata = label)
+train_spam <- rsample::training(split)
+test_spam <- rsample::testing(split)
+
+prop.table(table(train_spam$label))
+
+prop.table(table(test_spam$label))
+
+
+```
+Based on our training/testing splits, we have an uneven proportion of ham/spam instances. This becomes an issue when solving classification problems as the model will preform poorly when exposed to different datasets in which the other class is more evenly represented. One solution is to use Synthetic Minority Oversampling Technique (SMOTE), which creates a new dataset with a more even distribution between the target class values. This will not be done here, but might be done in a future project. 
+
+
+## Loading Packages 
+```{r}
+install.packages('rsample')
+
+install.packages('yardstick')
+
+library(rsample)
+install.packages('tidyverse')
+library(tidyverse)
+library(tidyverse)
+install.packages("smotefamily")
+library(smotefamily)
+
+
+
+```
+Next, we need to attempt and clean all the text associated with each instance of ham//spam. This function cleans up each line of text so recognizing the class becomes easier. 
+
+```{r}
+
+
+string_cleaner <- function(text_vector) {
+    tx <- text_vector %>%
+        str_replace_all("[^[:alnum:] ]+", "") %>%
+        str_to_lower() %>%
+        str_replace_all("\\b(http|www.+)\\b", "_url_") %>%
+        str_replace_all("\\b(\\d{7,})\\b", "_longnum_") %>%
+        str_split(" ")
+
+    tx <- lapply(tx, function(x) x[nchar(x) > 1])
+
+    tx
+}
+
+
+
+train_spam <- train_spam %>%
+    mutate(msg_list = string_cleaner(.$text))
+
+
+test_spam <- test_spam %>%
+    mutate(msg_list = string_cleaner(.$text))
+
+
+train_spam <- train_spam %>%
+    mutate(msg_list = string_cleaner(.$msg_list))
+
+test_spam <- test_spam %>%
+    mutate(msg_list = string_cleaner(.$msg_list))
+
+
+```
+
+
+```{r}
+
+vocab <- train_spam %>%
+    select(msg_list) %>%
+    unlist() %>%
+    unique() %>%
+    tibble::enframe(name = NULL, value = "word")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+ham_vocab <- train_spam %>%
+    filter(label == "ham") %>%
+    select(msg_list) %>%
+    tibble::deframe() %>%
+    unlist()
+
+spam_vocab <- train_spam %>%
+    filter(label == "spam") %>%
+    select(msg_list) %>%
+    tibble::deframe() %>%
+    unlist()
+
+
+
+```
+If we look at the different word list between the two groups, there is alot of overlap between the two classes, so classification accuracy could suffer. 
+
+
+```{r}
+
+vocab <- table(ham_vocab) %>%
+    tibble::as_tibble() %>%
+    rename(ham_n = n) %>%
+    left_join(vocab, ., by = c("word" = "ham_vocab"))
+
+vocab <- table(spam_vocab) %>%
+    tibble::as_tibble() %>%
+    rename(spam_n = n) %>%
+    left_join(vocab, ., by = c("word" = "spam_vocab"))
+
+
+
+
+```
+
+
+
+```{r}
+word_n <- c("unique" = nrow(vocab),
+            "ham" = length(ham_vocab),
+            "spam" = length(spam_vocab))
+
+class_probs <- prop.table(table(train_spam$label))
+
+
+
+```
+
+```{r}
+word_probabilities <- function(word_n, category_n, vocab_n, smooth = 1) {
+    prob <- (word_n + smooth) / (category_n + smooth * vocab_n)
+    prob
+}
+```
+
+```{r}
+vocab <- vocab %>%
+    tidyr::replace_na(list(ham_n = 0, spam_n = 0)) %>%
+    rowwise() %>%
+    mutate(ham_prob = word_probabilities(
+        ham_n, word_n["ham"], word_n["unique"])) %>%
+    mutate(spam_prob = word_probabilities(
+        spam_n, word_n["spam"], word_n["unique"])) %>%
+    ungroup()
+
+
+```
+
+```{r}
+classifier <- function(msg, prob_df, ham_p = 0.5, spam_p = 0.5) {
+    clean_message <- string_cleaner(msg) %>% unlist()
+
+    probs <- sapply(clean_message, function(x) {
+        filter(prob_df, word == x) %>%
+        select(ham_prob, spam_prob)
+    })
+
+    if (!is.null(dim(probs))) {
+        ham_prob <- prod(unlist(as.numeric(probs[1, ])), na.rm = TRUE)
+        spam_prob <- prod(unlist(as.numeric(probs[2, ])), na.rm = TRUE)
+        ham_prob <- ham_p * ham_prob
+        spam_prob <- spam_p * spam_prob
+
+        if (ham_prob > spam_prob) {
+            classification <- "ham"
+        } else if (ham_prob < spam_prob) {
+            classification <- "spam"
+        } else {
+            classification <- "unknown"
+        }
+    } else {
+        classification <- "unknown"
+    }
+
+    classification
+}
+```
+
+
+```{r}
+spam_classification <- sapply(test_spam$msg,
+    function(x) classifier(x, vocab, class_probs["ham"],
+                           class_probs["spam"]), USE.NAMES = FALSE)
+```
+
+
+```{r}
+fct_levels <- c("ham", "spam", "unknown")
+
+test_spam <- test_spam %>%
+    mutate(label = factor(.$label, levels = fct_levels),
+           .pred = factor(spam_classification, levels = fct_levels))
+
+performance <- yardstick::metrics(test_spam, label, .pred)
+
+performance
+
+```
+
+```{r}
+table(paste("actual", test_spam$label), paste("pred", test_spam$.pred))
+
+
+
+test_spam %>% 
+  mutate(all_ham = "ham") %>% 
+  mutate(all_ham = factor(all_ham, levels = fct_levels)) %>% 
+  yardstick::metrics(label, all_ham)
+
+
+```
+## Discussion/Results
+
+Our results show that our simple Naive Bayes classifier did not outpreform our simpler model of simply labeling everything as 'ham'. This is largely due to the fact that the majority of our data set consists of 'ham' instances, meaning that this might not be the case if we had a more balanced data set. The sub-par accuracy could be due to the fact that the text needed more cleaning, but what exactly that means is unclear, as the difficulty recognizing which of the two classes the instances belong to. Naive Bayes empircally is a good algorithim for spam classification, so our poor accuracy is a sign that the data set needs more cleaning.^[https://hohenfeld.is/posts/creating-a-naive-bayes-spam-filter-in-r/]  
